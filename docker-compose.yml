@@ -1,0 +1,30 @@
+version: '3.7'
+
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: thrive-planning-db
+    ports:
+      - '8000:8000'
+    expose:
+      - '8000'
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+ 
+  thriveplanningapi:
+    container_name: thrive-planning-api
+    build:
+      context: .
+    depends_on:
+      - dynamodb
+    ports:
+      - '80:80'
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+      - AWS_REGION=us-west-2
+      - AWS_PROFILE
+      - ASPNETCORE_ENVIRONMENT=Development
+    volumes:
+      # mount credentials files inside the container as read-only
+      - ~/.aws/credentials:/root/.aws/credentials:ro
+      - ~/.aws/config:/root/.aws/config:ro
