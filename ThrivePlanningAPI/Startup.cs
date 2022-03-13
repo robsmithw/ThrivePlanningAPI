@@ -1,17 +1,9 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Net;
 using Newtonsoft.Json;
@@ -19,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using MediatR;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
+using System.Threading.Tasks;
 
 namespace ThrivePlanningAPI
 {
@@ -54,10 +47,10 @@ namespace ThrivePlanningAPI
             services.AddControllers().AddNewtonsoftJson();
             services.AddMediatR(typeof(Startup).Assembly);
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                {
-                    options.TokenValidationParameters = GetCognitoTokenValidationParams();
-                });
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = GetCognitoTokenValidationParams();
+            });
 
             services.AddSingleton<IAmazonDynamoDB>(factory =>
             {
@@ -68,8 +61,7 @@ namespace ThrivePlanningAPI
             });
 
             services.AddSingleton<IDynamoDBContext>(s => new DynamoDBContext(s.GetService<IAmazonDynamoDB>()));
-            // will want to seed data, but leave this out for now
-            //services.AddSingleton(s => new SeedDataLoader(s.GetService<IAmazonDynamoDB>(), s.GetService<IDynamoDBContext>(), s.GetService<IConfiguration>(), s.GetService<IWebHostEnvironment>()));
+            services.AddSingleton(s => new SeedDataLoader(s.GetService<IAmazonDynamoDB>(), s.GetService<IDynamoDBContext>(), s.GetService<IConfiguration>(), s.GetService<IWebHostEnvironment>()));
 
         }
 
@@ -106,6 +98,7 @@ namespace ThrivePlanningAPI
         {
             if (env.IsDevelopment())
             {
+                SeedData(app).Wait();
                 app.UseCors();
                 app.UseDeveloperExceptionPage();
             }
@@ -120,5 +113,14 @@ namespace ThrivePlanningAPI
                 endpoints.MapControllers();
             });
         }
+
+        private async Task SeedData(IApplicationBuilder app)
+        {
+            using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
+            var seeder = serviceScope.ServiceProvider.GetRequiredService<SeedDataLoader>();
+
+            await seeder.SeedAsync();
+        }
+
     }
 }
