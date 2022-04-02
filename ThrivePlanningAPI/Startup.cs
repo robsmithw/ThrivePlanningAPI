@@ -52,16 +52,20 @@ namespace ThrivePlanningAPI
                 options.TokenValidationParameters = GetCognitoTokenValidationParams();
             });
 
-            services.AddSingleton<IAmazonDynamoDB>(factory =>
+            services.AddDbContextPool<ThrivePlanContext>((srv, builder) =>
             {
-                var dbConfig = HostingEnvironment.IsDevelopment()
-                    ? new AmazonDynamoDBConfig() { ServiceURL = Configuration["DynamoDB:ServiceUrl"] }
-                    : new AmazonDynamoDBConfig();
-                return new AmazonDynamoDBClient(dbConfig);
-            });
+                if (HostingEnvironment.IsDevelopment())
+                {
+                    builder.EnableDetailedErrors();
+                    builder.EnableSensitiveDataLogging();
+                }
+                var conn = Configuration.GetConnectionString("DefaultConnection");
 
-            services.AddSingleton<IDynamoDBContext>(s => new DynamoDBContext(s.GetService<IAmazonDynamoDB>()));
-            services.AddSingleton(s => new SeedDataLoader(s.GetService<IAmazonDynamoDB>(), s.GetService<IDynamoDBContext>(), s.GetService<IConfiguration>(), s.GetService<IWebHostEnvironment>()));
+                builder.UseMySql(conn, options =>
+                {
+                    options.ServerVersion(new Version(5, 7, 32), ServerType.MySql);
+                });
+            });
 
         }
 
