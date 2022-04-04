@@ -12,6 +12,10 @@ using MediatR;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using ThrivePlanningAPI.Models;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using System;
 
 namespace ThrivePlanningAPI
 {
@@ -61,10 +65,7 @@ namespace ThrivePlanningAPI
                 }
                 var conn = Configuration.GetConnectionString("DefaultConnection");
 
-                builder.UseMySql(conn, options =>
-                {
-                    options.ServerVersion(new Version(5, 7, 32), ServerType.MySql);
-                });
+                builder.UseMySql(conn, new MySqlServerVersion(new Version(5, 7, 32)));
             });
 
         }
@@ -102,7 +103,6 @@ namespace ThrivePlanningAPI
         {
             if (env.IsDevelopment())
             {
-                SeedData(app).Wait();
                 app.UseCors();
                 app.UseDeveloperExceptionPage();
             }
@@ -116,14 +116,6 @@ namespace ThrivePlanningAPI
             {
                 endpoints.MapControllers();
             });
-        }
-
-        private async Task SeedData(IApplicationBuilder app)
-        {
-            using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
-            var seeder = serviceScope.ServiceProvider.GetRequiredService<SeedDataLoader>();
-
-            await seeder.SeedAsync();
         }
 
     }
