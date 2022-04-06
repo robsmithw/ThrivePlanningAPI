@@ -12,6 +12,7 @@ namespace ThrivePlanningAPI.Models.Entities
         public UserType Type { get; set; }
         public virtual Company Company { get; set; }
         public Guid CompanyId { get; set; }
+        public bool IsConfirmed { get; set; } = false;
     }
 
     public enum UserType

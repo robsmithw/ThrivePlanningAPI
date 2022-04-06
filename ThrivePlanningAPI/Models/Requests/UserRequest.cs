@@ -1,4 +1,5 @@
-﻿using ThrivePlanningAPI.Models.Entities;
+﻿using System;
+using ThrivePlanningAPI.Models.Entities;
 
 namespace ThrivePlanningAPI.Models.Requests
 {
@@ -11,5 +12,6 @@ namespace ThrivePlanningAPI.Models.Requests
         public string Username { get; set; }
         public string Password { get; set; }
         public UserType Type { get; set; }
+        public Guid CompanyId { get; set; }
     }
 }
