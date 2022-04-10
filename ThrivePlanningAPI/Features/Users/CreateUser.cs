@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ThrivePlanningAPI.Features.UserManagement;
 using ThrivePlanningAPI.Models;
 using ThrivePlanningAPI.Models.Entities;
 using ThrivePlanningAPI.Models.Requests;
@@ -39,11 +40,13 @@ namespace ThrivePlanningAPI.Features.Users
 
         public class Handler : IRequestHandler<Command, CreateUserResult>
         {
+            private readonly ICognitoUserManagement _cognitoUserManagement;
             private readonly ILogger<CreateUser> _logger;
             private readonly ThrivePlanContext _context;
 
-            public Handler(ILogger<CreateUser> logger, ThrivePlanContext context)
+            public Handler(ICognitoUserManagement cognitoUserManagement, ILogger<CreateUser> logger, ThrivePlanContext context)
             {
+                _cognitoUserManagement = cognitoUserManagement;
                 _logger = logger;
                 _context = context;
             }
@@ -55,6 +58,7 @@ namespace ThrivePlanningAPI.Features.Users
                 var userRequest = request.User;
 
                 //create user in cognito
+                _cognitoUserManagement.AdminCreateUserAsync()
 
                 var newUser = CreateUser(userRequest.FirstName,
                     userRequest.LastName,
@@ -66,6 +70,8 @@ namespace ThrivePlanningAPI.Features.Users
 
                 await _context.Users.AddAsync(newUser, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
+
+                //send email request message to SQS
 
                 result.Successful = true;
                 result.Error = String.Empty;

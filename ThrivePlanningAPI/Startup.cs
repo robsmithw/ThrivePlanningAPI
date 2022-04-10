@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using ThrivePlanningAPI.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using System;
+using ThrivePlanningAPI.Features.UserManagement;
 
 namespace ThrivePlanningAPI
 {
@@ -55,6 +56,7 @@ namespace ThrivePlanningAPI
             {
                 options.TokenValidationParameters = GetCognitoTokenValidationParams();
             });
+            services.AddScoped<ICognitoUserManagement, CognitoUserManagement>();
 
             services.AddDbContextPool<ThrivePlanContext>((srv, builder) =>
             {

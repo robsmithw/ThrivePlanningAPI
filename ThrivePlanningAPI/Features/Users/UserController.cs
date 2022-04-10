@@ -20,16 +20,16 @@ namespace ThrivePlanningAPI.Features.Users
         }
 
         [HttpPost]
-        public async Task<ActionResult<Guid>> RegisterCompany([FromBody] CompanyRequest company)
+        public async Task<ActionResult<Guid>> RegisterUser([FromBody] UserRequest user)
         {
-            var response = await _mediator.Send(new CreateUser.Command(company));
+            var response = await _mediator.Send(new CreateUser.Command(user));
 
             if (!response.Successful)
             {
                 return BadRequest(response.Error);
             }
 
-            return Ok(response.CompanyId);
+            return Ok(response.UserId);
         }
     }
 }
