@@ -12,6 +12,11 @@ using MediatR;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using ThrivePlanningAPI.Models;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using System;
+using ThrivePlanningAPI.Features.UserManagement;
 
 namespace ThrivePlanningAPI
 {
@@ -31,10 +36,10 @@ namespace ThrivePlanningAPI
         {
             if (HostingEnvironment.IsDevelopment())
             {
-                services.AddCors(options => 
+                services.AddCors(options =>
                 {
                     options.AddDefaultPolicy(
-                        builder => 
+                        builder =>
                         {
                             builder.AllowAnyOrigin()
                             .AllowAnyMethod()
@@ -51,17 +56,19 @@ namespace ThrivePlanningAPI
             {
                 options.TokenValidationParameters = GetCognitoTokenValidationParams();
             });
+            services.AddScoped<ICognitoUserManagement, CognitoUserManagement>();
 
-            services.AddSingleton<IAmazonDynamoDB>(factory =>
+            services.AddDbContextPool<ThrivePlanContext>((srv, builder) =>
             {
-                var dbConfig = HostingEnvironment.IsDevelopment()
-                    ? new AmazonDynamoDBConfig() { ServiceURL = Configuration["DynamoDB:ServiceUrl"] }
-                    : new AmazonDynamoDBConfig();
-                return new AmazonDynamoDBClient(dbConfig);
-            });
+                if (HostingEnvironment.IsDevelopment())
+                {
+                    builder.EnableDetailedErrors();
+                    builder.EnableSensitiveDataLogging();
+                }
+                var conn = Configuration.GetConnectionString("DefaultConnection");
 
-            services.AddSingleton<IDynamoDBContext>(s => new DynamoDBContext(s.GetService<IAmazonDynamoDB>()));
-            services.AddSingleton(s => new SeedDataLoader(s.GetService<IAmazonDynamoDB>(), s.GetService<IDynamoDBContext>(), s.GetService<IConfiguration>(), s.GetService<IWebHostEnvironment>()));
+                builder.UseMySql(conn, new MySqlServerVersion(new Version(5, 7, 32)));
+            });
 
         }
 
@@ -70,17 +77,17 @@ namespace ThrivePlanningAPI
             var cognitoIssuer = $"https://cognito-idp.{Configuration["AWS:Region"]}.amazonaws.com/{Configuration["AWS:UserPoolId"]}";
             var jwtKeySetUrl = $"{cognitoIssuer}/.well-known/jwks.json";
             var cognitoAudience = Configuration["AWS:AppClientId"];
-            
+
             return new TokenValidationParameters
             {
                 IssuerSigningKeyResolver = (s, securityToken, identifier, parameters) =>
                 {
                     // get JsonWebKeySet from AWS
                     var json = new WebClient().DownloadString(jwtKeySetUrl);
-                    
+
                     // serialize the result
                     var keys = JsonConvert.DeserializeObject<JsonWebKeySet>(json).Keys;
-                    
+
                     // cast the result to be the type expected by IssuerSigningKeyResolver
                     return (IEnumerable<SecurityKey>)keys;
                 },
@@ -98,9 +105,15 @@ namespace ThrivePlanningAPI
         {
             if (env.IsDevelopment())
             {
-                SeedData(app).Wait();
                 app.UseCors();
                 app.UseDeveloperExceptionPage();
+
+            }
+
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<ThrivePlanContext>();
+                context.Database.Migrate();
             }
 
             app.UseAuthentication();
@@ -112,14 +125,6 @@ namespace ThrivePlanningAPI
             {
                 endpoints.MapControllers();
             });
-        }
-
-        private async Task SeedData(IApplicationBuilder app)
-        {
-            using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
-            var seeder = serviceScope.ServiceProvider.GetRequiredService<SeedDataLoader>();
-
-            await seeder.SeedAsync();
         }
 
     }
