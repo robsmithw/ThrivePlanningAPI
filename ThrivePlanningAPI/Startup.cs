@@ -36,10 +36,10 @@ namespace ThrivePlanningAPI
         {
             if (HostingEnvironment.IsDevelopment())
             {
-                services.AddCors(options => 
+                services.AddCors(options =>
                 {
                     options.AddDefaultPolicy(
-                        builder => 
+                        builder =>
                         {
                             builder.AllowAnyOrigin()
                             .AllowAnyMethod()
@@ -77,17 +77,17 @@ namespace ThrivePlanningAPI
             var cognitoIssuer = $"https://cognito-idp.{Configuration["AWS:Region"]}.amazonaws.com/{Configuration["AWS:UserPoolId"]}";
             var jwtKeySetUrl = $"{cognitoIssuer}/.well-known/jwks.json";
             var cognitoAudience = Configuration["AWS:AppClientId"];
-            
+
             return new TokenValidationParameters
             {
                 IssuerSigningKeyResolver = (s, securityToken, identifier, parameters) =>
                 {
                     // get JsonWebKeySet from AWS
                     var json = new WebClient().DownloadString(jwtKeySetUrl);
-                    
+
                     // serialize the result
                     var keys = JsonConvert.DeserializeObject<JsonWebKeySet>(json).Keys;
-                    
+
                     // cast the result to be the type expected by IssuerSigningKeyResolver
                     return (IEnumerable<SecurityKey>)keys;
                 },
@@ -107,6 +107,13 @@ namespace ThrivePlanningAPI
             {
                 app.UseCors();
                 app.UseDeveloperExceptionPage();
+
+            }
+
+            using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
+            {
+                var context = serviceScope.ServiceProvider.GetRequiredService<ThrivePlanContext>();
+                context.Database.Migrate();
             }
 
             app.UseAuthentication();

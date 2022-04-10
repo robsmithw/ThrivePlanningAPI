@@ -10,7 +10,7 @@ namespace ThrivePlanningAPI.Models.Entities
         public string Phone { get; set; }
         public string Username { get; set; }
         public UserType Type { get; set; }
-        public virtual Company Company { get; set; }
+        //public virtual Company Company { get; set; }
         public Guid CompanyId { get; set; }
         public bool IsConfirmed { get; set; } = false;
     }

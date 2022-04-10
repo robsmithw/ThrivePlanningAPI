@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ThrivePlanningAPI.Models.Entities
 {
@@ -12,5 +13,6 @@ namespace ThrivePlanningAPI.Models.Entities
         public string TaxId { get; set; }
         public string Industry { get; set; }
         public bool IsConfirmed { get; set; } = false;
+        //public virtual List<User> Users { get; set; }
     }
 }

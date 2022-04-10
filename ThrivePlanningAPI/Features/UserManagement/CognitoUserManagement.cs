@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Amazon;
@@ -26,7 +27,7 @@ namespace ThrivePlanningAPI.Features.UserManagement
             _shouldUseCognito = configuration.GetValue<bool>(AppSettings.FeatureFlags.ShouldUseCognito, false);
             RegionEndpoint regionEndpoint = RegionEndpoint.USWest1;
             CredentialProfileStoreChain credentialProfileStoreChain = new CredentialProfileStoreChain();
-            
+
             if (_shouldUseCognito)
             {
                 _userPoolId = configuration.GetValue<string>(AppSettings.AWS.UserPoolId);
@@ -57,7 +58,8 @@ namespace ThrivePlanningAPI.Features.UserManagement
         public async Task AdminCreateUserAsync(
             string username,
             string password,
-            List<AttributeType> attributeTypes)
+            List<AttributeType> userAttributes,
+            CancellationToken cancellationToken = default)
         {
 
             if (!_shouldUseCognito)
@@ -70,29 +72,10 @@ namespace ThrivePlanningAPI.Features.UserManagement
                 Username = username,
                 TemporaryPassword = password,
                 UserPoolId = _userPoolId,
-                UserAttributes = attributeTypes
+                UserAttributes = userAttributes
             };
             AdminCreateUserResponse adminCreateUserResponse = await adminAmazonCognitoIdentityProviderClient
-                .AdminCreateUserAsync(adminCreateUserRequest);
-
-            //AdminUpdateUserAttributesRequest adminUpdateUserAttributesRequest = new AdminUpdateUserAttributesRequest
-            //{
-            //    Username = username,
-            //    UserPoolId = userPoolId,
-            //    UserAttributes = new List<AttributeType>
-            //            {
-            //                new AttributeType()
-            //                {
-            //                    Name = "email_verified",
-            //                    Value = "true"
-            //                }
-            //            }
-            //};
-
-            //AdminUpdateUserAttributesResponse adminUpdateUserAttributesResponse = adminAmazonCognitoIdentityProviderClient
-            //    .AdminUpdateUserAttributesAsync(adminUpdateUserAttributesRequest)
-            //    .Result;
-
+                .AdminCreateUserAsync(adminCreateUserRequest, cancellationToken);
 
             AdminInitiateAuthRequest adminInitiateAuthRequest = new AdminInitiateAuthRequest
             {
@@ -107,7 +90,7 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
 
             AdminInitiateAuthResponse adminInitiateAuthResponse = await adminAmazonCognitoIdentityProviderClient
-                .AdminInitiateAuthAsync(adminInitiateAuthRequest);
+                .AdminInitiateAuthAsync(adminInitiateAuthRequest, cancellationToken);
 
             AdminRespondToAuthChallengeRequest adminRespondToAuthChallengeRequest = new AdminRespondToAuthChallengeRequest
             {
@@ -115,20 +98,45 @@ namespace ThrivePlanningAPI.Features.UserManagement
                 ClientId = _appClientId,
                 UserPoolId = _userPoolId,
                 ChallengeResponses = new Dictionary<string, string>
-                        {
-                            { "USERNAME", username },
-                            { "NEW_PASSWORD", password }
-                        },
+                {
+                    { "USERNAME", username },
+                    { "NEW_PASSWORD", password }
+                },
                 Session = adminInitiateAuthResponse.Session
             };
 
             AdminRespondToAuthChallengeResponse adminRespondToAuthChallengeResponse = await adminAmazonCognitoIdentityProviderClient
-                .AdminRespondToAuthChallengeAsync(adminRespondToAuthChallengeRequest);
+                .AdminRespondToAuthChallengeAsync(adminRespondToAuthChallengeRequest, cancellationToken);
+        }
+
+        public async Task AdminUpdateUserAttributesAsync(
+            string username,
+            List<AttributeType> userAttributes,
+            CancellationToken cancellationToken = default)
+        {
+            // This is the user attribute required to mark user as email verified
+            // {
+            //     new AttributeType()
+            //     {
+            //         Name = "email_verified",
+            //         Value = "true"
+            //     }
+            // }
+            AdminUpdateUserAttributesRequest adminUpdateUserAttributesRequest = new AdminUpdateUserAttributesRequest
+            {
+                Username = username,
+                UserPoolId = _userPoolId,
+                UserAttributes = userAttributes
+            };
+
+            AdminUpdateUserAttributesResponse adminUpdateUserAttributesResponse = await adminAmazonCognitoIdentityProviderClient
+               .AdminUpdateUserAttributesAsync(adminUpdateUserAttributesRequest);
         }
 
         public async Task AdminAddUserToGroupAsync(
             string username,
-            string groupName)
+            string groupName,
+            CancellationToken cancellationToken = default)
         {
             AdminAddUserToGroupRequest adminAddUserToGroupRequest = new AdminAddUserToGroupRequest
             {
@@ -138,12 +146,13 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
 
             AdminAddUserToGroupResponse adminAddUserToGroupResponse = await adminAmazonCognitoIdentityProviderClient
-                .AdminAddUserToGroupAsync(adminAddUserToGroupRequest);
+                .AdminAddUserToGroupAsync(adminAddUserToGroupRequest, cancellationToken);
         }
 
         public async Task<AdminInitiateAuthResponse> AdminAuthenticateUserAsync(
             string username,
-            string password)
+            string password,
+            CancellationToken cancellationToken = default)
         {
             AdminInitiateAuthRequest adminInitiateAuthRequest = new AdminInitiateAuthRequest
             {
@@ -157,12 +166,13 @@ namespace ThrivePlanningAPI.Features.UserManagement
                 }
             };
             return await adminAmazonCognitoIdentityProviderClient
-                .AdminInitiateAuthAsync(adminInitiateAuthRequest);
+                .AdminInitiateAuthAsync(adminInitiateAuthRequest, cancellationToken);
         }
 
         public async Task AdminRemoveUserFromGroupAsync(
             string username,
-            string groupName)
+            string groupName,
+            CancellationToken cancellationToken = default)
         {
             AdminRemoveUserFromGroupRequest adminRemoveUserFromGroupRequest = new AdminRemoveUserFromGroupRequest
             {
@@ -172,11 +182,12 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
 
             await adminAmazonCognitoIdentityProviderClient
-                .AdminRemoveUserFromGroupAsync(adminRemoveUserFromGroupRequest);
+                .AdminRemoveUserFromGroupAsync(adminRemoveUserFromGroupRequest, cancellationToken);
         }
 
         public async Task AdminDisableUserAsync(
-            string username)
+            string username,
+            CancellationToken cancellationToken = default)
         {
             AdminDisableUserRequest adminDisableUserRequest = new AdminDisableUserRequest
             {
@@ -185,11 +196,12 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
 
             await adminAmazonCognitoIdentityProviderClient
-                .AdminDisableUserAsync(adminDisableUserRequest);
+                .AdminDisableUserAsync(adminDisableUserRequest, cancellationToken);
         }
 
         public async Task AdminDeleteUserAsync(
-            string username)
+            string username,
+            CancellationToken cancellationToken = default)
         {
             AdminDeleteUserRequest deleteUserRequest = new AdminDeleteUserRequest
             {
@@ -198,7 +210,7 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
 
             await adminAmazonCognitoIdentityProviderClient
-                .AdminDeleteUserAsync(deleteUserRequest);
+                .AdminDeleteUserAsync(deleteUserRequest, cancellationToken);
         }
     }
 }

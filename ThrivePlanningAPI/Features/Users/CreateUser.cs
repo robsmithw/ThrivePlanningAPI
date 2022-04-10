@@ -1,4 +1,5 @@
-﻿using Amazon.DynamoDBv2;
+﻿using Amazon.CognitoIdentityProvider.Model;
+using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -57,9 +58,18 @@ namespace ThrivePlanningAPI.Features.Users
                 var result = new CreateUserResult(false, "Unknown Error");
                 var userRequest = request.User;
 
-                //create user in cognito
-                _cognitoUserManagement.AdminCreateUserAsync()
+                var emailAttribute = new AttributeType()
+                {
+                    Name = "email",
+                    Value = userRequest.Email
+                };
 
+                // Create user in cognito
+                await _cognitoUserManagement.AdminCreateUserAsync(userRequest.Username,
+                    userRequest.Password,
+                    new List<AttributeType> { emailAttribute });
+
+                // Create user in database
                 var newUser = CreateUser(userRequest.FirstName,
                     userRequest.LastName,
                     userRequest.CompanyId,
@@ -71,7 +81,7 @@ namespace ThrivePlanningAPI.Features.Users
                 await _context.Users.AddAsync(newUser, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
 
-                //send email request message to SQS
+                // Send email request message to SQS (to send confirmation email)
 
                 result.Successful = true;
                 result.Error = String.Empty;
@@ -85,7 +95,7 @@ namespace ThrivePlanningAPI.Features.Users
                 Guid companyId,
                 string email,
                 string phoneNumber,
-                UserType type,
+                Models.Entities.UserType type,
                 string username)
             {
                 return new User()

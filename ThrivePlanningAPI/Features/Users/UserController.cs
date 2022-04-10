@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using ThrivePlanningAPI.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using MediatR;
+
+using System;
+using System.Threading.Tasks;
+
 using ThrivePlanningAPI.Models.Requests;
 
 namespace ThrivePlanningAPI.Features.Users

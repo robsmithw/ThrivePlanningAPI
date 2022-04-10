@@ -81,9 +81,9 @@ namespace ThrivePlanningAPI.Models
                 entity.Property(e => e.CompanyId)
                     .HasColumnType("varchar(36)");
 
-                entity.HasOne(e => e.Company)
-                    .WithMany()
-                    .HasForeignKey(e => e.CompanyId);
+                // entity.HasOne(e => e.Company)
+                //     .WithMany()
+                //     .HasForeignKey(e => e.CompanyId);
             });
 
             OnModelCreatingPartial(modelBuilder);
