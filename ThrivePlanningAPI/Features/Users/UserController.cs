@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 
 using ThrivePlanningAPI.Models.Requests;
+using static ThrivePlanningAPI.Features.Users.LoginUser;
 
 namespace ThrivePlanningAPI.Features.Users
 {
@@ -29,6 +30,20 @@ namespace ThrivePlanningAPI.Features.Users
             }
 
             return Ok(response.UserId);
+        }
+
+        [HttpPost]
+        [Route(nameof(Login))]
+        public async Task<ActionResult<LoginUserResponse>> Login([FromBody] LoginRequest login)
+        {
+            var response = await _mediator.Send(new LoginUser.Command(login));
+
+            if (!response.Successful)
+            {
+                return BadRequest(response.Error);
+            }
+
+            return Ok(response);
         }
     }
 }

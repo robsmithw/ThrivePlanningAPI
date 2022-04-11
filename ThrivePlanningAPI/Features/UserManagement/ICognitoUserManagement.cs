@@ -26,6 +26,10 @@ namespace ThrivePlanningAPI.Features.UserManagement
             string username,
             string password,
             CancellationToken cancellationToken = default);
+        Task<List<string>> AdminGetUserGroupsAsync(
+            string username,
+            CancellationToken cancellationToken = default
+        );
         Task AdminRemoveUserFromGroupAsync(
             string username,
             string groupName,

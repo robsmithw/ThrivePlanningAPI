@@ -69,6 +69,8 @@ namespace ThrivePlanningAPI.Features.Users
                     userRequest.Password,
                     new List<AttributeType> { emailAttribute });
 
+                // Add user to groups (roles) based on the type
+
                 // Create user in database
                 var newUser = CreateUser(userRequest.FirstName,
                     userRequest.LastName,

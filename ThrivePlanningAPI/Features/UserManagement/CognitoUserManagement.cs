@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -167,6 +168,22 @@ namespace ThrivePlanningAPI.Features.UserManagement
             };
             return await adminAmazonCognitoIdentityProviderClient
                 .AdminInitiateAuthAsync(adminInitiateAuthRequest, cancellationToken);
+        }
+
+        public async Task<List<string>> AdminGetUserGroupsAsync(
+            string username,
+            CancellationToken cancellationToken = default)
+        {
+            var request = new AdminListGroupsForUserRequest()
+            {
+                Username = username,
+                UserPoolId = _userPoolId
+            };
+
+            var response = await adminAmazonCognitoIdentityProviderClient
+                .AdminListGroupsForUserAsync(request, cancellationToken);
+
+            return response.Groups.Select(x => x.GroupName).ToList();
         }
 
         public async Task AdminRemoveUserFromGroupAsync(
